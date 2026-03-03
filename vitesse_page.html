@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Calculateur de Vitesse</title>
+    <link rel="stylesheet" href="vitesse.css">
+</head>
+<body>
+    <div style="text-align: center; padding: 20px;">
+        <a href="index.html" style="color: white; text-decoration: none;">← Retour au Hub</a>
+    </div>
+
+    <section>
+        <h1>Calculateur de Vitesse</h1>
+        <img src="the-flash-barry-allen.gif" alt="Flash">
+    </section>
+
+    <section>
+        <div class="inputs">
+            <div class="input-group">
+                <label>Minutes</label>
+                <input type="tel" id="minutes" placeholder="Ex: 5">
+            </div>
+            <div class="input-group">
+                <label>Secondes</label>
+                <input type="tel" id="secondes" placeholder="Ex: 30">
+            </div>
+        </div>
+        <input type="button" value="Calculer" onclick="calcule()">
+        <div id="erreur" style="color: red; margin-top: 10px;"></div>
+        <div id="resultat" style="font-size: 2rem; font-weight: bold; margin-top: 15px;"></div>
+    </section>
+
+    <script src="vitesse.js"></script>
+</body>
+</html>

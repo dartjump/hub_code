@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0d1f17">
+<title>Scotland 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --green:#1a3a2a;--g2:#2d6b47;--gold:#c9a84c;--cream:#f5f0e8;--dark:#0d1f17;--mist:#8aaa96;
+  --safe-top:env(safe-area-inset-top,44px);--safe-bot:env(safe-area-inset-bottom,34px);
+  --hh:calc(56px + var(--safe-top));
+}
+html,body{height:100%;overflow:hidden;background:var(--dark);font-family:-apple-system,'Helvetica Neue',sans-serif;-webkit-font-smoothing:antialiased}
+
+/* ── SPLASH ── */
+#splash{position:fixed;inset:0;z-index:9999;background:var(--dark);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;transition:opacity .6s,transform .6s}
+#splash.hide{opacity:0;pointer-events:none;transform:scale(1.04)}
+.sp-flag{font-size:72px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+.sp-title{font-family:'Playfair Display',serif;color:var(--gold);font-size:2rem}
+.sp-sub{color:var(--mist);font-size:.78rem;letter-spacing:3px;text-transform:uppercase}
+.sp-bar{width:160px;height:3px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden;margin-top:14px}
+.sp-prog{height:100%;background:var(--gold);animation:ld 1.8s ease forwards}
+@keyframes ld{from{width:0}to{width:100%}}
+
+/* ── APP ── */
+#app{display:flex;flex-direction:column;height:100vh;height:100dvh}
+.top-bar{background:var(--dark);padding-top:var(--safe-top);height:var(--hh);display:flex;align-items:flex-end;padding-bottom:10px;padding-left:18px;padding-right:18px;z-index:100;box-shadow:0 1px 0 rgba(255,255,255,.06);flex-shrink:0}
+.tb-inner{display:flex;align-items:center;justify-content:space-between;width:100%}
+.logo{font-family:'Playfair Display',serif;color:var(--gold);font-size:1.1rem}
+.logo small{display:block;color:var(--mist);font-size:.5rem;letter-spacing:3px}
+.chip{background:rgba(201,168,76,.15);border:1px solid rgba(201,168,76,.3);color:var(--gold);font-size:.65rem;padding:4px 10px;border-radius:20px;letter-spacing:1px}
+
+#content{flex:1;overflow:hidden;position:relative}
+.tp{display:none;position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+.tp.active{display:block}
+
+/* ── TAB BAR ── */
+.tab-bar{background:rgba(13,31,23,.97);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border-top:1px solid rgba(255,255,255,.08);padding-bottom:var(--safe-bot);display:flex;flex-shrink:0;z-index:100}
+.tb-btn{flex:1;border:none;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 2px 8px;cursor:pointer;color:var(--mist);gap:3px}
+.tb-btn .ic{font-size:1.3rem;transition:transform .2s}
+.tb-btn .lb{font-size:.58rem;font-weight:600;letter-spacing:.3px}
+.tb-btn.active{color:var(--gold)}
+.tb-btn.active .ic{transform:translateY(-2px)}
+.tb-btn:active .ic{transform:scale(.87)}
+
+/* ── PLANNING ── */
+#tp-plan{background:var(--dark)}
+.vsw{display:flex;background:rgba(255,255,255,.06);border-radius:10px;margin:12px 14px 0;padding:3px}
+.vb{flex:1;border:none;background:none;color:var(--mist);font-size:.76rem;padding:8px 4px;border-radius:8px;cursor:pointer;transition:all .2s;font-family:inherit;font-weight:600}
+.vb.active{background:var(--gold);color:var(--dark)}
+
+.s-hero{background:linear-gradient(160deg,var(--green) 0%,#0d2a1a 100%);padding:20px 16px 18px;position:relative;overflow:hidden}
+.s-hero::before{content:'';position:absolute;top:-40px;right:-30px;width:160px;height:160px;border-radius:50%;background:rgba(201,168,76,.06)}
+.h-day{color:var(--gold);font-size:.62rem;letter-spacing:3px;text-transform:uppercase;margin-bottom:5px;font-weight:700}
+.h-title{font-family:'Playfair Display',serif;color:#fff;font-size:1.85rem;line-height:1.1;margin-bottom:3px}
+.h-from{color:var(--mist);font-size:.78rem;margin-bottom:13px}
+.h-stats{display:flex;gap:7px}
+.hs{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:11px;padding:9px 12px;text-align:center;flex:1}
+.hs-v{color:var(--gold);font-size:1.1rem;font-weight:700;font-family:'Playfair Display',serif}
+.hs-l{color:var(--mist);font-size:.56rem;text-transform:uppercase;letter-spacing:1px}
+.h-notes{color:rgba(255,255,255,.62);font-size:.78rem;line-height:1.55;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.07)}
+
+.pois{display:flex;gap:5px;flex-wrap:wrap;padding:11px 14px 0}
+.poi{background:rgba(26,58,42,.12);border:1px solid rgba(26,58,42,.22);color:var(--green);font-size:.68rem;padding:4px 10px;border-radius:50px;font-weight:700}
+
+.sec-t{padding:14px 16px 7px;color:var(--mist);font-size:.6rem;letter-spacing:3px;text-transform:uppercase;font-weight:700}
+
+/* Tiles */
+.tg{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 13px 6px}
+.tile{border-radius:14px;padding:13px 12px;text-decoration:none;display:flex;flex-direction:column;gap:6px;box-shadow:0 2px 10px rgba(0,0,0,.15);min-height:84px;transition:transform .15s}
+.tile:active{transform:scale(.95)}
+.tile-t{display:flex;align-items:center;gap:7px}
+.tile-e{font-size:1.2rem}
+.tile-n{color:#fff;font-size:.76rem;font-weight:700}
+.tile-d{color:rgba(255,255,255,.6);font-size:.65rem;line-height:1.3}
+.t1{background:linear-gradient(145deg,#2d6b47,#1a3a2a)}
+.t2{background:linear-gradient(145deg,#a04420,#6b2010)}
+.t3{background:linear-gradient(145deg,#1e7a50,#0d4a30)}
+.t4{background:linear-gradient(145deg,#5a4520,#3a2d10)}
+.t5{background:linear-gradient(145deg,#1a557a,#0d3050)}
+.t6{background:linear-gradient(145deg,#72206a,#4a1045)}
+.t7{background:linear-gradient(145deg,#2a2a7a,#101060)}
+
+/* Steps list */
+.sl-wrap{padding:4px 0 120px}
+.sl-row{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer;transition:background .15s}
+.sl-row:active{background:rgba(201,168,76,.08)}
+.sl-row.cur{background:rgba(201,168,76,.1);border-left:3px solid var(--gold)}
+.sl-dot{width:32px;height:32px;border-radius:50%;background:rgba(201,168,76,.15);border:2px solid rgba(201,168,76,.3);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sl-ds{color:var(--gold);font-size:.66rem;font-weight:700;text-align:center;line-height:1.1}
+.sl-info{flex:1}
+.sl-to{color:#fff;font-size:.84rem;font-weight:600;margin-bottom:2px}
+.sl-fr{color:var(--mist);font-size:.66rem}
+.sl-km{color:var(--gold);font-size:.7rem;font-weight:700;text-align:right;white-space:nowrap}
+.sl-h{color:var(--mist);font-size:.58rem;text-align:right}
+
+/* ── JOURNAL ── */
+.journal-wrap{margin:8px 12px 14px;background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 2px 14px rgba(0,0,0,.08)}
+.j-head{display:flex;align-items:center;justify-content:space-between;padding:13px 14px 10px;border-bottom:1px solid #f0e8d8;background:#fffdf9}
+.j-head-l{display:flex;align-items:center;gap:8px}
+.j-icon{font-size:1.2rem}
+.j-head h3{font-size:.86rem;font-weight:700;color:var(--dark)}
+.j-head small{display:block;color:var(--mist);font-size:.62rem;margin-top:1px}
+.j-actions{display:flex;align-items:center;gap:7px}
+.j-saved{color:#22c55e;font-size:.68rem;font-weight:700;display:none;white-space:nowrap}
+.j-save{background:var(--green);color:#fff;border:none;font-size:.7rem;font-weight:700;padding:7px 12px;border-radius:20px;cursor:pointer;font-family:inherit;white-space:nowrap;transition:all .15s}
+.j-save:active{transform:scale(.95);background:var(--g2)}
+
+.j-body{padding:12px 14px 14px}
+.j-ta{width:100%;border:1.5px solid #e8e0d0;border-radius:12px;padding:11px 12px;font-size:.83rem;font-family:inherit;color:var(--dark);background:#fafaf7;resize:none;min-height:108px;outline:none;line-height:1.55;transition:border-color .2s}
+.j-ta:focus{border-color:var(--gold);background:#fff}
+.j-ta::placeholder{color:#c0b8a8}
+
+/* Photos section */
+.ph-sec{margin-top:11px}
+.ph-lbl{font-size:.62rem;color:var(--mist);font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:7px}
+.ph-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px}
+.ph-wrap{position:relative;aspect-ratio:1}
+.ph-img{width:100%;height:100%;border-radius:10px;object-fit:cover;cursor:pointer;display:block;transition:transform .15s}
+.ph-img:active{transform:scale(.94)}
+.ph-del{position:absolute;top:3px;right:3px;background:rgba(200,30,30,.88);border:none;color:#fff;font-size:.65rem;width:20px;height:20px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700}
+.ph-add{aspect-ratio:1;border-radius:10px;border:2px dashed #d8cfc0;background:#faf5ec;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;color:var(--mist);transition:all .2s;gap:2px;width:100%}
+.ph-add:active{background:#f0ead8;border-color:var(--gold)}
+.ph-add .ph-ae{font-size:1.35rem}
+.ph-add p{font-size:.6rem;font-weight:700;letter-spacing:.5px}
+.ph-input{display:none}
+
+/* Lightbox */
+#lb{position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.94);display:none;align-items:center;justify-content:center}
+#lb.open{display:flex}
+#lb img{max-width:94%;max-height:82vh;border-radius:12px;object-fit:contain}
+#lb-close{position:absolute;top:calc(var(--safe-top) + 12px);right:16px;background:rgba(255,255,255,.18);border:none;color:#fff;font-size:1.2rem;width:38px;height:38px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center}
+
+/* ── MAP ── */
+#tp-map{background:var(--dark)}
+#leaflet-map{width:100%;height:100%;min-height:300px}
+
+/* ── METEO ── */
+#tp-meteo{background:var(--cream)}
+.m-hero{background:linear-gradient(160deg,var(--green),#0d2a1a);padding:22px 16px 18px}
+.m-title{font-family:'Playfair Display',serif;color:#fff;font-size:1.5rem;margin-bottom:4px}
+.m-sub{color:var(--mist);font-size:.75rem;line-height:1.4}
+.m-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(201,168,76,.15);border:1px solid rgba(201,168,76,.3);color:var(--gold);font-size:.6rem;font-weight:700;letter-spacing:1px;padding:3px 9px;border-radius:20px;margin-bottom:10px}
+.m-dot{width:6px;height:6px;border-radius:50%;background:#4ade80;animation:blink 1.5s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.m-note{margin:13px 13px 0;background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.25);border-radius:13px;padding:10px 13px;font-size:.75rem;color:var(--dark);line-height:1.5}
+.mc-list{display:flex;flex-direction:column;gap:8px;padding:11px 13px 100px}
+.mc{background:#fff;border-radius:16px;padding:14px;box-shadow:0 2px 10px rgba(0,0,0,.07);display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}
+.mc-cn{font-size:.92rem;font-weight:700;color:var(--dark);margin-bottom:1px}
+.mc-day{font-size:.64rem;color:var(--mist);margin-bottom:7px}
+.mc-cond{display:flex;align-items:center;gap:7px}
+.mc-em{font-size:1.5rem}
+.mc-dc{font-size:.77rem;color:#555}
+.mc-pills{display:flex;gap:5px;margin-top:7px;flex-wrap:wrap}
+.mc-p{background:var(--cream);color:var(--dark);font-size:.65rem;padding:3px 7px;border-radius:14px;font-weight:600}
+.mc-temp{font-family:'Playfair Display',serif;font-size:2.6rem;color:var(--green);line-height:1;text-align:right}
+.mc-feel{font-size:.64rem;color:var(--mist);text-align:right;margin-top:2px}
+.mc-sk{background:#f0ebe2;border-radius:14px;height:95px;animation:sh 1.5s infinite}
+@keyframes sh{0%,100%{opacity:.5}50%{opacity:1}}
+.tips{padding:0 13px 20px}
+.tips-title{font-family:'Playfair Display',serif;color:var(--green);font-size:1.1rem;margin:16px 0 10px}
+.tip{background:#fff;border-radius:13px;padding:12px 13px;margin-bottom:7px;display:flex;gap:10px;align-items:flex-start;box-shadow:0 1px 5px rgba(0,0,0,.06)}
+.tip-e{font-size:1.3rem;flex-shrink:0;margin-top:1px}
+.tip-t strong{display:block;font-size:.79rem;color:var(--dark);margin-bottom:2px}
+.tip-t span{font-size:.72rem;color:#666;line-height:1.4}
+
+/* ── CAL ── */
+#tp-cal{background:var(--cream)}
+.cal-hero{background:linear-gradient(160deg,var(--green),#0d2a1a);padding:20px 16px 18px}
+.cal-title{font-family:'Playfair Display',serif;color:#fff;font-size:1.5rem;margin-bottom:3px}
+.cal-sub{color:var(--mist);font-size:.74rem}
+.cal-stats{display:flex;gap:6px;margin-top:11px;overflow-x:auto;padding-bottom:2px}
+.cs{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);border-radius:11px;padding:9px 12px;text-align:center;flex-shrink:0}
+.cs-v{color:var(--gold);font-family:'Playfair Display',serif;font-size:1.2rem}
+.cs-l{color:var(--mist);font-size:.54rem;letter-spacing:1px;text-transform:uppercase}
+.cal-body{padding:13px 12px 100px}
+.cal-mb{margin-bottom:20px}
+.cal-mn{font-size:.72rem;font-weight:700;color:var(--mist);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px}
+.cal-g{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.cdh{text-align:center;font-size:.56rem;font-weight:700;color:var(--mist);letter-spacing:1px;padding:4px 0}
+.cc{background:#fff;border-radius:8px;min-height:50px;padding:4px 3px}
+.cc.empty{background:rgba(0,0,0,.03)}
+.cc.trip{background:#e8f4ec;cursor:pointer}
+.cc.trip:active{background:#cde3d4;transform:scale(.95)}
+.cn{font-size:.7rem;font-weight:700;color:#ccc}
+.cc.trip .cn{color:var(--green)}
+.ctag{margin-top:2px;font-size:.46rem;font-weight:700;padding:2px 3px;border-radius:4px;line-height:1.3;display:block;background:var(--green);color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ctag.gold{background:var(--gold);color:var(--dark)}
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="sp-flag">🏴󠁧󠁢󠁳󠁣󠁴󠁿</div>
+  <div class="sp-title">Scotland Roadtrip</div>
+  <div class="sp-sub">Avril – Mai 2026</div>
+  <div class="sp-bar"><div class="sp-prog"></div></div>
+</div>
+
+<!-- LIGHTBOX -->
+<div id="lb" onclick="closeLb()">
+  <button id="lb-close" onclick="closeLb()">✕</button>
+  <img id="lb-img" src="" alt="">
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="top-bar">
+    <div class="tb-inner">
+      <div class="logo">Scotland 2026 <small>30 AVR – 10 MAI</small></div>
+      <div class="chip">11 jours · 3183 km</div>
+    </div>
+  </div>
+
+  <div id="content">
+
+    <!-- PLANNING -->
+    <div id="tp-plan" class="tp active">
+      <div class="vsw">
+        <button class="vb active" onclick="setPV('detail')">📍 Étape du jour</button>
+        <button class="vb" onclick="setPV('list')">📋 Tout l'itinéraire</button>
+      </div>
+      <div id="pv-detail">
+        <div id="sh-content"></div>
+        <div id="st-content"></div>
+        <div id="sj-content"></div>
+      </div>
+      <div id="pv-list" style="display:none">
+        <div class="sl-wrap" id="sl-el"></div>
+      </div>
+    </div>
+
+    <!-- MAP -->
+    <div id="tp-map" class="tp"><div id="leaflet-map"></div></div>
+
+    <!-- METEO -->
+    <div id="tp-meteo" class="tp">
+      <div class="m-hero">
+        <div class="m-badge"><div class="m-dot"></div> EN DIRECT</div>
+        <div class="m-title">☁️ Météo</div>
+        <div class="m-sub">Conditions actuelles pour chaque étape du voyage</div>
+      </div>
+      <div class="m-note">ℹ️ Données <strong>en temps réel</strong>. Reviens à l'approche du voyage pour voir les vraies prévisions de mai 2026 !</div>
+      <div class="mc-list" id="mc-list"></div>
+      <div class="tips">
+        <div class="tips-title">🎒 Conseils pour Mai en Écosse</div>
+        <div class="tip"><div class="tip-e">🌦️</div><div class="tip-t"><strong>Temps variable</strong><span>Mai est plus clément qu'hiver mais reste imprévisible. Imperméable toujours dans le sac !</span></div></div>
+        <div class="tip"><div class="tip-e">💚</div><div class="tip-t"><strong>Highlands au printemps</strong><span>Végétation verdoyante, cascades gonflées, lumière douce. Idéal pour la photo !</span></div></div>
+        <div class="tip"><div class="tip-e">🦟</div><div class="tip-t"><strong>Midges (moucherons)</strong><span>Mai = début de saison des midges. Prendre un répulsif spécial Écosse (Smidge ou Avon Skin So Soft).</span></div></div>
+        <div class="tip"><div class="tip-e">🌅</div><div class="tip-t"><strong>Longues soirées</strong><span>Lever ~5h30, coucher ~21h30 en mai. Les lumières du soir sont absolument magiques !</span></div></div>
+        <div class="tip"><div class="tip-e">🌊</div><div class="tip-t"><strong>Ferries CalMac</strong><span>Réserver à l'avance ! Ferry Mallaig → Armadale populaire. Alt. gratuite : Pont de Skye.</span></div></div>
+      </div>
+    </div>
+
+    <!-- CALENDRIER -->
+    <div id="tp-cal" class="tp">
+      <div class="cal-hero">
+        <div class="cal-title">📅 Calendrier du voyage</div>
+        <div class="cal-sub">30 Avril – 10 Mai 2026</div>
+        <div class="cal-stats">
+          <div class="cs"><div class="cs-v">3183</div><div class="cs-l">km total</div></div>
+          <div class="cs"><div class="cs-v">11</div><div class="cs-l">jours</div></div>
+          <div class="cs"><div class="cs-v">41h</div><div class="cs-l">conduite</div></div>
+          <div class="cs"><div class="cs-v">8</div><div class="cs-l">hôtels</div></div>
+          <div class="cs"><div class="cs-v">2</div><div class="cs-l">ferries</div></div>
+        </div>
+      </div>
+      <div class="cal-body">
+        <div class="cal-mb"><div class="cal-mn">Avril 2026</div><div class="cal-g" id="cal-apr"></div></div>
+        <div class="cal-mb"><div class="cal-mn">Mai 2026</div><div class="cal-g" id="cal-may"></div></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="tab-bar">
+    <button class="tb-btn active" onclick="swTab('plan',this)"><div class="ic">🗺️</div><div class="lb">Planning</div></button>
+    <button class="tb-btn" onclick="swTab('map',this)"><div class="ic">📍</div><div class="lb">Carte</div></button>
+    <button class="tb-btn" onclick="swTab('meteo',this)"><div class="ic">☁️</div><div class="lb">Météo</div></button>
+    <button class="tb-btn" onclick="swTab('cal',this)"><div class="ic">📅</div><div class="lb">Calendrier</div></button>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════
+// DATA — dates exactes PDF (Thu 30 Apr → Sun 10 May 2026)
+// ════════════════════════════════════════════════════════
+const STEPS = [
+  {
+    id:'d0', short:'30/4', dayLabel:'Jeu 30 Avr', from:'Genval', to:'Calais',
+    km:226, h:2.5, hotel:null, hotelUrl:null, hotelDesc:null,
+    lat:50.9548, lng:1.8587,
+    pois:['Route vers la mer','Embarquement Eurotunnel'],
+    notes:'Départ de Genval vers Calais. Embarquement Le Shuttle en soirée vers Folkestone.',
+    tiles:{
+      hotel:null,
+      resto:'https://www.tripadvisor.fr/Restaurants-g187064-Calais_Pas_de_Calais.html',
+      walk:null, castle:null, nature:null, museum:null,
+      transport:'https://www.leshuttle.com/fr-fr'
+    }
+  },
+  {
+    id:'d1', short:'30/4', dayLabel:'Jeu 30 Avr — Nuit', from:'Folkestone', to:'Carlisle',
+    km:600, h:6,
+    hotel:'Crown & Mitre Hotel', hotelUrl:'https://crown-and-mitre-hotel-carlisle.at-hotels.com/en/',
+    hotelDesc:'Hôtel 3★ édouardien en centre-ville · Piscine intérieure · Jacuzzi · Restaurant · 106 chambres · Note 8.3/10',
+    lat:54.8951, lng:-2.9382,
+    pois:['Arrivée ~21h','Carlisle Castle à 450m'],
+    notes:'Traversée de nuit depuis Folkestone. Arrivée à Carlisle vers 21h. Le Crown & Mitre est un grand hôtel édouardien avec piscine et jacuzzi, à 5 min à pied de la rivière.',
+    tiles:{
+      hotel:'https://crown-and-mitre-hotel-carlisle.at-hotels.com/en/',
+      resto:'https://www.tripadvisor.fr/Restaurants-g186385-Carlisle_Cumbria.html',
+      walk:null,
+      castle:'https://www.carlislecastle.org.uk/',
+      nature:null, museum:null,
+      transport:'https://www.leshuttle.com/fr-fr'
+    }
+  },
+  {
+    id:'d2', short:'1/5', dayLabel:'Ven 1 Mai', from:'Carlisle', to:'Fort William',
+    km:320, h:4,
+    hotel:'Loch Leven Hotel', hotelUrl:'https://lochlevenhotel.co.uk/',
+    hotelDesc:'Hôtel familial sur les rives du Loch Leven · Restaurant gastronomique avec vue panoramique · Old Ferry Bar récompensé "Best Bar" · Tél. +44 1855 821236',
+    lat:56.8198, lng:-5.1052,
+    pois:['Mur d\'Hadrien','Glencoe','Viaduc de Glenfinnan'],
+    notes:'Entrée en Écosse ! Arrêt au Mur d\'Hadrien puis route vers les Highlands via Glencoe. Le Loch Leven Hotel est un vrai bijou au bord du loch avec un bar dans un bâtiment de 1700.',
+    tiles:{
+      hotel:'https://lochlevenhotel.co.uk/',
+      resto:'https://www.tripadvisor.fr/Restaurants-g551782-Fort_William.html',
+      walk:'https://www.walkhighlands.co.uk/lochaber/glencoe.shtml',
+      castle:'https://www.english-heritage.org.uk/visit/places/',
+      nature:'https://www.glencoe-visitor-centre.org.uk/',
+      museum:'https://www.visitscotland.com/info/see-do/glencoe-visitor-centre-p247821',
+      transport:'https://www.google.com/maps/dir/Carlisle/Fort+William'
+    }
+  },
+  {
+    id:'d3', short:'2/5', dayLabel:'Sam 2 Mai', from:'Fort William', to:'Skye · Linicro',
+    km:170, h:3,
+    hotel:'Monkstadt House', hotelUrl:'https://www.monkstadt.co.uk/',
+    hotelDesc:'Maison d\'hôtes historique au nord de Skye · Vue sur mer · Cadre authentique',
+    lat:57.5822, lng:-6.2122,
+    pois:['Ferry Mallaig → Armadale (CalMac)','Cuillins','Viaduc Glenfinnan (Harry Potter)'],
+    notes:'Route vers Mallaig via le Viaduc de Glenfinnan. Ferry CalMac vers l\'île de Skye — réservation recommandée ! La Fairy Glen et le Dun Beag Broch sont proches de l\'hébergement.',
+    tiles:{
+      hotel:'https://www.monkstadt.co.uk/',
+      resto:'https://www.tripadvisor.fr/Restaurants-g580218-Isle_of_Skye.html',
+      walk:'https://www.isleofskye.com/skye-guide/skye-places/fairy-glen',
+      castle:'http://skyeforall.co.uk/dun-beag-broch/',
+      nature:'https://www.visitscotland.com/destinations-maps/isle-of-skye/',
+      museum:null,
+      transport:'https://www.calmac.co.uk/route/mallaig-armadale'
+    }
+  },
+  {
+    id:'d4', short:'3/5', dayLabel:'Dim 3 Mai', from:'Linicro', to:'Skye — Tour Trotternish',
+    km:0, h:0,
+    hotel:'Monkstadt House', hotelUrl:'https://www.monkstadt.co.uk/',
+    hotelDesc:'2ème nuit à Monkstadt House',
+    lat:57.5822, lng:-6.2122,
+    pois:['Old Man of Storr','Kilt Rock & Mealt Falls','Quiraing','Fairy Glen ✨','Dun Beag Broch (Âge de Fer)'],
+    notes:'Journée entière pour explorer la péninsule Trotternish. La Fairy Glen (Bail nan cnoc) est un endroit féérique caché dans les collines d\'Uig. Le Dun Beag Broch est une tour de l\'Âge de Fer remarquablement conservée.',
+    tiles:{
+      hotel:'https://www.monkstadt.co.uk/',
+      resto:'https://www.tripadvisor.fr/Restaurants-g580218-Isle_of_Skye.html',
+      walk:'https://www.isleofskye.com/skye-guide/skye-places/fairy-glen',
+      castle:'http://skyeforall.co.uk/dun-beag-broch/',
+      nature:'https://www.walkhighlands.co.uk/skye/quiraing.shtml',
+      museum:'https://www.skye-museum.co.uk/',
+      transport:null
+    }
+  },
+  {
+    id:'d5', short:'4/5', dayLabel:'Lun 4 Mai', from:'Linicro', to:'Ullapool · Kylesku',
+    km:330, h:6.5,
+    hotel:'Kylesku Hotel', hotelUrl:'https://www.highlandcoasthotels.com/kylesku-hotel',
+    hotelDesc:'Boutique hôtel sur le NC500 · Lauréat Best Hotel for Sustainability 2022 · Restaurant 2× lauréat Restaurant of the Year · Vue sur le loch · Tél. +44 1971 910047',
+    lat:57.8960, lng:-5.1589,
+    pois:['Eilean Donan Castle','NC500 côte ouest','Kylesku Bridge'],
+    notes:'Longue mais magnifique route côtière sur le NC500. Arrêt incontournable à Eilean Donan Castle. Le Kylesku Hotel est une adresse d\'exception — boutique hôtel primé sur les rives du loch.',
+    tiles:{
+      hotel:'https://www.highlandcoasthotels.com/kylesku-hotel',
+      resto:'https://www.tripadvisor.fr/Restaurants-g551793-Ullapool.html',
+      walk:'https://www.visitscotland.com/destinations-maps/northern-highlands/',
+      castle:'https://www.eileandonancastle.com/',
+      nature:'https://www.visitscotland.com/info/see-do/inverpolly-national-nature-reserve-p245201',
+      museum:null, transport:null
+    }
+  },
+  {
+    id:'d6', short:'5/5', dayLabel:'Mar 5 Mai', from:'Ullapool', to:'Tongue',
+    km:111, h:2.5,
+    hotel:'Tongue Hotel', hotelUrl:'https://www.highlandcoasthotels.com/tongue-hotel/',
+    hotelDesc:'Hôtel historique dans les Highlands du Nord · Groupe Highland Coast Hotels',
+    lat:58.4807, lng:-4.4204,
+    pois:['Sandwood Beach','Côte Nord-Ouest NC500'],
+    notes:'Route vers l\'extrême nord de l\'Écosse. Sandwood Beach est considérée comme l\'une des plus belles plages sauvages d\'Écosse — 8 km de sable blanc accessible uniquement à pied.',
+    tiles:{
+      hotel:'https://www.highlandcoasthotels.com/tongue-hotel/',
+      resto:'https://www.tripadvisor.fr/Restaurants-g551805-Tongue.html',
+      walk:'https://www.walkhighlands.co.uk/sutherland/sandwood-bay.shtml',
+      castle:null,
+      nature:'https://www.walkhighlands.co.uk/sutherland/sandwood-bay.shtml',
+      museum:null, transport:null
+    }
+  },
+  {
+    id:'d7', short:'6/5', dayLabel:'Mer 6 Mai', from:'Tongue', to:'Tongue — Explorations',
+    km:0, h:0,
+    hotel:'Tongue Hotel', hotelUrl:'https://www.highlandcoasthotels.com/tongue-hotel/',
+    hotelDesc:'2ème nuit au Tongue Hotel',
+    lat:58.4807, lng:-4.4204,
+    pois:['Smoo Cave','Kyle of Tongue','Cape Wrath (optionnel)'],
+    notes:'Journée de repos et d\'exploration locale. La Smoo Cave est une impressionnante caverne marine. La vue sur le Kyle of Tongue avec ses teintes turquoise est absolument magique.',
+    tiles:{
+      hotel:'https://www.highlandcoasthotels.com/tongue-hotel/',
+      resto:'https://www.tripadvisor.fr/Restaurants-g551805-Tongue.html',
+      walk:'https://www.walkhighlands.co.uk/sutherland/smoo-cave.shtml',
+      castle:null,
+      nature:'https://www.visitscotland.com/info/see-do/smoo-cave-p247751',
+      museum:null, transport:null
+    }
+  },
+  {
+    id:'d8', short:'7/5', dayLabel:'Jeu 7 Mai', from:'Tongue', to:'Inverness',
+    km:190, h:3,
+    hotel:'Lochardil House', hotelUrl:'https://www.highlandcoasthotels.com/lochardil-house/',
+    hotelDesc:'Hôtel élégant à Inverness · Groupe Highland Coast Hotels · Restaurant gastronomique',
+    lat:57.4778, lng:-4.2247,
+    pois:['Dunrobin Castle','Dornoch','Stirling (en route)'],
+    notes:'Retour vers le sud via la côte est. Arrêt à Dunrobin Castle, le plus grand château des Highlands et l\'un des plus beaux d\'Écosse. Possibilité d\'arrêt à Stirling.',
+    tiles:{
+      hotel:'https://www.highlandcoasthotels.com/lochardil-house/',
+      resto:'https://www.tripadvisor.fr/Restaurants-g186543-Inverness.html',
+      walk:'https://www.walkhighlands.co.uk/inverness/',
+      castle:'https://www.dunrobincastle.co.uk/',
+      nature:null,
+      museum:'https://www.historicenvironment.scot/visit-a-place/places/dunfermline-abbey-and-palace/',
+      transport:null
+    }
+  },
+  {
+    id:'d9', short:'8/5', dayLabel:'Ven 8 Mai', from:'Inverness', to:'Edinburgh',
+    km:250, h:3,
+    hotel:'Ibis Edinburgh', hotelUrl:'https://all.accor.com/hotel/6444/index.fr.shtml',
+    hotelDesc:'Hôtel Ibis centre-ville · À deux pas du Royal Mile et Edinburgh Castle',
+    lat:55.9533, lng:-3.1883,
+    pois:['Royal Mile','Edinburgh Castle','Whisky Bar','Holyrood Palace'],
+    notes:'Arrivée dans la magnifique capitale écossaise ! Soirée sur le Royal Mile, visite d\'un whisky bar pour finir en beauté cette traversée des Highlands.',
+    tiles:{
+      hotel:'https://all.accor.com/hotel/6444/index.fr.shtml',
+      resto:'https://www.tripadvisor.fr/Restaurants-g186525-Edinburgh.html',
+      walk:'https://www.walkhighlands.co.uk/lothian/',
+      castle:'https://www.edinburghcastle.scot/',
+      nature:'https://www.holyrood.info/',
+      museum:'https://www.nms.ac.uk/national-museum-of-scotland/',
+      transport:null
+    }
+  },
+  {
+    id:'d10', short:'9/5', dayLabel:'Sam 9 Mai', from:'Edinburgh', to:'Cambridge',
+    km:570, h:6,
+    hotel:'À confirmer', hotelUrl:'https://www.booking.com/city/gb/cambridge.fr.html',
+    hotelDesc:'Hébergement à confirmer à Cambridge',
+    lat:52.2053, lng:0.1218,
+    pois:['Route de retour','Cambridge','Dunfermline Abbey (en option)'],
+    notes:'Grande route de retour vers le sud. Option intéressante : arrêt à Dunfermline Abbey & Palace, ancienne capitale d\'Écosse (ouverte 10h–16h). Nuit à Cambridge.',
+    tiles:{
+      hotel:'https://www.booking.com/city/gb/cambridge.fr.html',
+      resto:'https://www.tripadvisor.fr/Restaurants-g186225-Cambridge.html',
+      walk:'https://www.visitcambridge.org/',
+      castle:'https://www.historicenvironment.scot/visit-a-place/places/dunfermline-abbey-and-palace/',
+      nature:null,
+      museum:'https://www.fitzmuseum.cam.ac.uk/',
+      transport:'https://www.google.com/maps/dir/Edinburgh/Cambridge'
+    }
+  },
+  {
+    id:'d11', short:'10/5', dayLabel:'Dim 10 Mai', from:'Cambridge', to:'Genval 🏡',
+    km:416, h:4.5, hotel:'Maison', hotelUrl:null, hotelDesc:null,
+    lat:50.6292, lng:4.5833,
+    pois:['Folkestone → Calais','Le Shuttle','Retour Genval'],
+    notes:'Dernier tronçon ! Retour en Belgique via Le Shuttle à Folkestone. Fin d\'un voyage inoubliable à travers les Highlands d\'Écosse 🏴󠁧󠁢󠁳󠁣󠁴󠁿',
+    tiles:{
+      hotel:null, resto:null, walk:null, castle:null, nature:null, museum:null,
+      transport:'https://www.leshuttle.com/fr-fr'
+    }
+  }
+];
+
+const TCONF = {
+  hotel:  { e:'🏨', n:'Hébergement',    c:'t1' },
+  resto:  { e:'🍽️', n:'Restaurants',    c:'t2' },
+  walk:   { e:'🥾', n:'Balades',         c:'t3' },
+  castle: { e:'🏰', n:'Châteaux & Sites',c:'t4' },
+  nature: { e:'🌊', n:'Nature & Plages', c:'t5' },
+  museum: { e:'🏛️', n:'Musées & Sites',  c:'t6' },
+  transport:{ e:'🚢', n:'Transports',    c:'t7' }
+};
+const TDESC = {
+  hotel:(s)=>s.hotelDesc||'Voir les hébergements',
+  resto:()=>'Restaurants, cafés & pubs locaux',
+  walk:()=>'Sentiers, randonnées & balades',
+  castle:()=>'Châteaux & monuments historiques',
+  nature:()=>'Plages, cascades, parcs naturels',
+  museum:()=>'Musées, abbayes & expositions',
+  transport:()=>'Ferries, Eurotunnel & transports'
+};
+
+// ── STATE ──
+let curStep=0, pView='detail', mapOk=false, mapInst=null;
+
+// ════════════════════════════════════════════════════════
+// PLANNING RENDER
+// ════════════════════════════════════════════════════════
+function renderHero(i) {
+  const s = STEPS[i];
+  const statsHtml = s.km > 0
+    ? `<div class="hs"><div class="hs-v">${s.km}</div><div class="hs-l">km</div></div>
+       <div class="hs"><div class="hs-v">${s.h}h</div><div class="hs-l">route</div></div>
+       ${s.hotel ? `<div class="hs"><div class="hs-v">🏨</div><div class="hs-l">${s.hotel.split(' ').slice(0,2).join(' ')}</div></div>` : ''}`
+    : `<div class="hs"><div class="hs-v">🏠</div><div class="hs-l">Journée</div></div>
+       ${s.hotel ? `<div class="hs"><div class="hs-v">🏨</div><div class="hs-l">${s.hotel.split(' ').slice(0,2).join(' ')}</div></div>` : ''}`;
+
+  document.getElementById('sh-content').innerHTML = `
+    <div class="s-hero">
+      <div class="h-day">${s.dayLabel}</div>
+      <div class="h-title">${s.to}</div>
+      <div class="h-from">Depuis ${s.from}</div>
+      <div class="h-stats">${statsHtml}</div>
+      <div class="h-notes">${s.notes}</div>
+    </div>
+    ${s.pois.length ? `<div class="pois">${s.pois.map(p=>`<div class="poi">📍 ${p}</div>`).join('')}</div>` : ''}
+    <div class="sec-t">Ressources & Liens</div>
+  `;
+
+  const tilesHtml = Object.entries(s.tiles)
+    .filter(([,u]) => u)
+    .map(([t, url]) => {
+      const c = TCONF[t];
+      return `<a href="${url}" target="_blank" class="tile ${c.c}">
+        <div class="tile-t"><div class="tile-e">${c.e}</div><div class="tile-n">${c.n}</div></div>
+        <div class="tile-d">${TDESC[t](s)}</div>
+      </a>`;
+    }).join('');
+  document.getElementById('st-content').innerHTML = `<div class="tg">${tilesHtml}</div>`;
+  renderJournal(i);
+}
+
+// ════════════════════════════════════════════════════════
+// JOURNAL + PHOTOS (localStorage)
+// ════════════════════════════════════════════════════════
+const jKey  = i => `scot_j_${STEPS[i].id}`;
+const phKey = i => `scot_p_${STEPS[i].id}`;
+
+const loadTxt  = i => { try { return localStorage.getItem(jKey(i)) || ''; } catch(e) { return ''; } };
+const saveTxt  = (i,v)=> { try { localStorage.setItem(jKey(i), v); } catch(e) {} };
+const loadPics = i => { try { const d = localStorage.getItem(phKey(i)); return d ? JSON.parse(d) : []; } catch(e) { return []; } };
+const savePics = (i,p) => { try { localStorage.setItem(phKey(i), JSON.stringify(p)); } catch(e) {} };
+
+function renderJournal(i) {
+  const txt = loadTxt(i);
+  const pics = loadPics(i);
+  const picHtml = pics.map((src,pi) => `
+    <div class="ph-wrap">
+      <img class="ph-img" src="${src}" onclick="openLb('${src}')" alt="">
+      <button class="ph-del" onclick="delPic(${i},${pi})">✕</button>
+    </div>`).join('');
+
+  document.getElementById('sj-content').innerHTML = `
+    <div class="journal-wrap">
+      <div class="j-head">
+        <div class="j-head-l">
+          <div class="j-icon">📓</div>
+          <div>
+            <h3>Mon Journal</h3>
+            <small>${STEPS[i].dayLabel} · ${STEPS[i].to}</small>
+          </div>
+        </div>
+        <div class="j-actions">
+          <span class="j-saved" id="jsaved-${i}">✓ Sauvegardé !</span>
+          <button class="j-save" onclick="saveJournal(${i})">Sauvegarder</button>
+        </div>
+      </div>
+      <div class="j-body">
+        <textarea class="j-ta" id="jta-${i}" placeholder="Raconte ta journée... Qu'as-tu vu ? Tes coups de cœur ? Les petits moments magiques ? 🏴󠁧󠁢󠁳󠁣󠁴󠁿">${txt}</textarea>
+        <div class="ph-sec">
+          <div class="ph-lbl">📸 Photos de la journée</div>
+          <div class="ph-grid" id="phgrid-${i}">
+            ${picHtml}
+            <label class="ph-add" for="ph-inp-${i}">
+              <div class="ph-ae">📷</div>
+              <p>Ajouter</p>
+            </label>
+          </div>
+          <input type="file" accept="image/*" multiple class="ph-input" id="ph-inp-${i}" onchange="addPics(${i},this)">
+        </div>
+      </div>
+    </div>
+    <div style="height:90px"></div>
+  `;
+}
+
+function saveJournal(i) {
+  const ta = document.getElementById(`jta-${i}`);
+  if (!ta) return;
+  saveTxt(i, ta.value);
+  const b = document.getElementById(`jsaved-${i}`);
+  if (b) { b.style.display = 'block'; setTimeout(() => b.style.display = 'none', 2500); }
+}
+
+function addPics(i, input) {
+  const pics = loadPics(i);
+  const files = Array.from(input.files);
+  let n = 0;
+  files.forEach(f => {
+    const r = new FileReader();
+    r.onload = e => {
+      pics.push(e.target.result);
+      n++;
+      if (n === files.length) { savePics(i, pics); renderJournal(i); }
+    };
+    r.readAsDataURL(f);
+  });
+  input.value = '';
+}
+
+function delPic(i, pi) {
+  const pics = loadPics(i);
+  pics.splice(pi, 1);
+  savePics(i, pics);
+  renderJournal(i);
+}
+
+function openLb(src) {
+  document.getElementById('lb-img').src = src;
+  document.getElementById('lb').classList.add('open');
+}
+function closeLb() { document.getElementById('lb').classList.remove('open'); }
+
+// ════════════════════════════════════════════════════════
+// STEPS LIST
+// ════════════════════════════════════════════════════════
+function renderList() {
+  document.getElementById('sl-el').innerHTML = STEPS.map((s,i) => `
+    <div class="sl-row ${i===curStep?'cur':''}" onclick="selStep(${i})">
+      <div class="sl-dot"><div class="sl-ds">${s.short}</div></div>
+      <div class="sl-info">
+        <div class="sl-to">${s.to}</div>
+        <div class="sl-fr">Depuis ${s.from}</div>
+      </div>
+      <div>
+        <div class="sl-km">${s.km>0?s.km+' km':'🏠'}</div>
+        <div class="sl-h">${s.h>0?s.h+'h':'Journée'}</div>
+      </div>
+      <div style="color:var(--mist);font-size:.75rem">›</div>
+    </div>`).join('');
+}
+
+function selStep(i) {
+  curStep = i;
+  renderHero(i);
+  renderList();
+  setPV('detail');
+  document.getElementById('tp-plan').scrollTop = 0;
+  if (mapInst) mapInst.setView([STEPS[i].lat, STEPS[i].lng], 9);
+}
+
+function setPV(v) {
+  pView = v;
+  document.getElementById('pv-detail').style.display = v==='detail'?'block':'none';
+  document.getElementById('pv-list').style.display   = v==='list'?'block':'none';
+  document.querySelectorAll('.vb').forEach((b,i) =>
+    b.classList.toggle('active', (i===0&&v==='detail')||(i===1&&v==='list')));
+  if (v==='list') renderList();
+}
+
+// ════════════════════════════════════════════════════════
+// MAP
+// ════════════════════════════════════════════════════════
+function initMap() {
+  if (mapOk) { setTimeout(()=>mapInst&&mapInst.invalidateSize(true),150); return; }
+  mapOk = true;
+  const el = document.getElementById('leaflet-map');
+  el.style.height = (window.innerHeight - 56 - 60) + 'px';
+  mapInst = L.map('leaflet-map',{zoomControl:false}).setView([57.2,-4.8],6);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    {attribution:'© OpenStreetMap',maxZoom:18}).addTo(mapInst);
+  L.control.zoom({position:'bottomright'}).addTo(mapInst);
+  L.polyline(STEPS.map(s=>[s.lat,s.lng]),
+    {color:'#c9a84c',weight:3,opacity:.85,dashArray:'8,6'}).addTo(mapInst);
+  STEPS.forEach((s,i) => {
+    const isEnd = i===0 || i===STEPS.length-1;
+    const m = L.circleMarker([s.lat,s.lng], {
+      radius: isEnd?9:7,
+      fillColor: isEnd?'#c9a84c':'#2d6b47',
+      color:'#fff', weight:2, fillOpacity:1
+    }).addTo(mapInst);
+    m.bindPopup(`<div style="font-family:-apple-system,sans-serif;min-width:155px">
+      <strong style="color:#1a3a2a">${s.to}</strong><br>
+      <span style="color:#8aaa96;font-size:.7rem">${s.dayLabel}</span>
+      ${s.hotel?`<br><span style="color:#c9a84c;font-size:.72rem">🏨 ${s.hotel}</span>`:''}
+      ${s.km>0?`<br><span style="font-size:.72rem">${s.km} km · ${s.h}h</span>`:''}
+      <br><div style="margin-top:4px;display:flex;flex-wrap:wrap;gap:3px">
+        ${s.pois.map(p=>`<span style="background:#e8f4ec;color:#1a3a2a;padding:2px 5px;border-radius:6px;font-size:.6rem;font-weight:600">${p}</span>`).join('')}
+      </div>
+    </div>`,{maxWidth:210});
+    m.on('click',()=>{selStep(i);swTabById('plan');});
+  });
+  setTimeout(()=>mapInst&&mapInst.invalidateSize(true),300);
+}
+
+// ════════════════════════════════════════════════════════
+// MÉTÉO
+// ════════════════════════════════════════════════════════
+const WL = [
+  {city:'Carlisle',     day:'Jeu 30 Avr',     lat:54.8951, lng:-2.9382},
+  {city:'Fort William', day:'Ven 1 Mai',       lat:56.8198, lng:-5.1052},
+  {city:'Isle of Skye', day:'Sam–Dim 2–3 Mai', lat:57.5822, lng:-6.2122},
+  {city:'Ullapool',     day:'Lun 4 Mai',       lat:57.896,  lng:-5.1589},
+  {city:'Tongue',       day:'Mar–Mer 5–6 Mai', lat:58.4807, lng:-4.4204},
+  {city:'Inverness',    day:'Jeu 7 Mai',       lat:57.4778, lng:-4.2247},
+  {city:'Edinburgh',    day:'Ven 8 Mai',       lat:55.9533, lng:-3.1883},
+  {city:'Cambridge',    day:'Sam 9 Mai',       lat:52.2053, lng:0.1218}
+];
+const WMO={0:['☀️','Ciel dégagé'],1:['🌤️','Peu nuageux'],2:['⛅','Nuageux'],3:['☁️','Couvert'],45:['🌫️','Brouillard'],48:['🌫️','Brouillard givrant'],51:['🌦️','Bruine légère'],53:['🌦️','Bruine'],55:['🌧️','Bruine dense'],61:['🌧️','Pluie légère'],63:['🌧️','Pluie'],65:['🌧️','Pluie forte'],71:['🌨️','Neige légère'],73:['🌨️','Neige'],75:['❄️','Neige forte'],80:['🌦️','Averses'],81:['🌧️','Averses mod.'],82:['⛈️','Averses fortes'],95:['⛈️','Orage'],96:['⛈️','Orage grêle'],99:['⛈️','Orage fort']};
+
+async function loadMeteo() {
+  const el = document.getElementById('mc-list');
+  el.innerHTML = WL.map(()=>'<div class="mc-sk"></div>').join('');
+  const res = await Promise.allSettled(WL.map(async l => {
+    const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${l.lat}&longitude=${l.lng}&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code&wind_speed_unit=kmh&timezone=Europe%2FLondon`);
+    const d = await r.json(); const c = d.current;
+    const [ic,dc] = WMO[c.weather_code]||['🌡️','N/A'];
+    return {...l, ic, dc, temp:Math.round(c.temperature_2m), feel:Math.round(c.apparent_temperature), wind:Math.round(c.wind_speed_10m), hum:Math.round(c.relative_humidity_2m)};
+  }));
+  el.innerHTML = res.map((r,i) => {
+    const l = WL[i];
+    if (r.status==='rejected') return `<div class="mc"><div><div class="mc-cn">${l.city}</div><div class="mc-day">${l.day}</div><span style="color:#aaa;font-size:.8rem">❌ Indisponible</span></div></div>`;
+    const w = r.value;
+    return `<div class="mc">
+      <div>
+        <div class="mc-cn">${w.city}</div>
+        <div class="mc-day">${w.day}</div>
+        <div class="mc-cond"><div class="mc-em">${w.ic}</div><div class="mc-dc">${w.dc}</div></div>
+        <div class="mc-pills"><div class="mc-p">💨 ${w.wind} km/h</div><div class="mc-p">💧 ${w.hum}%</div></div>
+      </div>
+      <div><div class="mc-temp">${w.temp}°</div><div class="mc-feel">Ressenti ${w.feel}°C</div></div>
+    </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════════════════════
+// CALENDRIER — dates réelles du PDF
+// ════════════════════════════════════════════════════════
+const TRIP = {
+  '2026-04-30':{label:'Départ 🚗',cls:'gold'},
+  '2026-05-01':{label:'→ Ft William'},
+  '2026-05-02':{label:'→ Skye'},
+  '2026-05-03':{label:'Skye 🏝️'},
+  '2026-05-04':{label:'→ Ullapool'},
+  '2026-05-05':{label:'→ Tongue'},
+  '2026-05-06':{label:'Smoo Cave'},
+  '2026-05-07':{label:'→ Inverness'},
+  '2026-05-08':{label:'→ Edinburgh'},
+  '2026-05-09':{label:'→ Cambridge'},
+  '2026-05-10':{label:'Retour 🏡',cls:'gold'}
+};
+const DAY_I = {
+  '2026-04-30':0,'2026-05-01':2,'2026-05-02':3,'2026-05-03':4,
+  '2026-05-04':5,'2026-05-05':6,'2026-05-06':7,'2026-05-07':8,
+  '2026-05-08':9,'2026-05-09':10,'2026-05-10':11
+};
+
+function buildCal(id, y, m) {
+  const dys = ['L','M','M','J','V','S','D'];
+  let h = dys.map(d=>`<div class="cdh">${d}</div>`).join('');
+  let dow = new Date(y,m-1,1).getDay(); dow = dow===0?6:dow-1;
+  for (let e=0; e<dow; e++) h += `<div class="cc empty"></div>`;
+  const tot = new Date(y,m,0).getDate();
+  for (let d=1; d<=tot; d++) {
+    const k = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const t = TRIP[k];
+    h += `<div class="cc ${t?'trip':''}" ${t?`onclick="calClick('${k}')"`:''}><div class="cn">${d}</div>${t?`<span class="ctag ${t.cls||''}">${t.label}</span>`:''}</div>`;
+  }
+  document.getElementById(id).innerHTML = h;
+}
+function calClick(k) {
+  const i = DAY_I[k];
+  if (i !== undefined) { selStep(i); swTabById('plan'); }
+}
+
+// ════════════════════════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════════════════════════
+function swTab(id, btn) {
+  document.querySelectorAll('.tp').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tb-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tp-'+id).classList.add('active');
+  btn.classList.add('active');
+  if (id==='map') setTimeout(initMap, 50);
+}
+function swTabById(id) {
+  const idx = ['plan','map','meteo','cal'].indexOf(id);
+  if (idx>=0) swTab(id, document.querySelectorAll('.tb-btn')[idx]);
+}
+
+// ════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => document.getElementById('splash').classList.add('hide'), 1800);
+  renderHero(0);
+  buildCal('cal-apr', 2026, 4);
+  buildCal('cal-may', 2026, 5);
+  loadMeteo();
+});
+</script>
+</body>
+</html>
