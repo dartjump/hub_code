@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+    <title>formulaire</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <link rel="stylesheet" href= "formulaire.css" >
+
+<body>
+    <form onsubmit="return false">
+        <fieldset>
+        <legend>formulaire de contrôle</legend>
+        <input type="texte" id="valeur" name="donnée" placeholder="entrez une valeur">
+        <label name="nom">dans quelle colonne ?</label>
+        <div class="radio-group">
+            <label><input type="radio" id="colonneA" name="colonne" value="A"> colonne A</label>
+            <label><input type="radio" id="colonneB" name="colonne" value="B"> colonne B</label>
+        </div>
+        <div class="boutons">
+            <input type="submit" onclick="envoyer()" value="crée le tableau">
+            <input type="button" onclick='effacer()' value='effacé la dernière ligne'>
+            <input type="button" onclick='exporter()' value='exporter excel'>
+        </div>
+        </fieldset>
+    </form>
+
+    <table id="tableau">
+        <tr>
+            <th>Heure A</th>
+            <th>Colonne A</th>
+            <th>Heure B</th>
+            <th>Colonne B</th>
+        </tr>
+    </table>
+</body>
+<script src="formulaire.js"></script>
+</html>
