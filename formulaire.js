@@ -6,14 +6,13 @@ window.onload = function(){
 
 function envoyer(){
     let valeur = document.getElementById("valeur").value;
-    let heure = new Date().toLocaleTimeString();
+    let dateHeure = new Date().toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
     let colonne = document.querySelector('input[name="colonne"]:checked').value;
 
     let tableau = document.getElementById("tableau");
     tableau.innerHTML += `<tr>
-        <td>${colonne === "A" ? heure : ""}</td>
+        <td>${dateHeure}</td>
         <td>${colonne === "A" ? valeur : ""}</td>
-        <td>${colonne === "B" ? heure : ""}</td>
         <td>${colonne === "B" ? valeur : ""}</td>
     </tr>`;
 
